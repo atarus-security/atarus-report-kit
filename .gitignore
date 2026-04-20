@@ -15,3 +15,6 @@ Thumbs.db
 
 # Build scripts (local only)
 build*.sh
+
+# Build scripts (local only)
+build*.sh
