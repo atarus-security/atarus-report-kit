@@ -1,0 +1,17 @@
+# Local test output
+test-output.pdf
+*.local.json
+*.draft.json
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build scripts (local only)
+build_*.sh

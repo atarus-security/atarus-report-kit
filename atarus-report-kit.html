@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>atarus-report-kit</title>
+<style>
+  :root {
+    --primary: #1e40af;
+    --accent: #dc2626;
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-alt: #172033;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --input-bg: #0b1220;
+    --help: #fbbf24;
+    --success: #22c55e;
+    --critical: #dc2626;
+    --high: #ea580c;
+    --medium: #d97706;
+    --low: #16a34a;
+    --info: #2563eb;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 14px; overflow: hidden; }
+
+  .topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; height: 56px; }
+  .brand { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+  .brand .dot { color: var(--accent); }
+  .brand .suffix { color: var(--text-muted); font-weight: 400; font-size: 13px; margin-left: 4px; }
+  .topbar-spacer { flex: 1; }
+  .btn { background: var(--panel-alt); color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+  .btn:hover { background: var(--border); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); }
+  .btn.primary:hover { background: #2563eb; }
+  .btn.danger { background: var(--accent); border-color: var(--accent); }
+  .btn.danger:hover { background: #ef4444; }
+  .btn-icon { padding: 8px 10px; }
+
+  .workspace { display: grid; grid-template-columns: 420px 1fr; height: calc(100vh - 56px); }
+
+  .editor { background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; }
+  .editor::-webkit-scrollbar { width: 8px; }
+  .editor::-webkit-scrollbar-track { background: var(--panel); }
+  .editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .nav-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  .nav-tab { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+
+  .section-panel h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .section-panel .section-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.6; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+  .field input, .field textarea, .field select { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-size: 13px; font-family: inherit; resize: vertical; }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--primary); }
+  .field textarea { min-height: 80px; line-height: 1.6; }
+  .field textarea.tall { min-height: 140px; }
+  .field .help { background: rgba(251, 191, 36, 0.08); border-left: 3px solid var(--help); padding: 8px 12px; margin-top: 6px; font-size: 12px; color: var(--text-muted); border-radius: 0 4px 4px 0; line-height: 1.6; }
+  .field .help strong { color: var(--help); }
+  .field .help code { background: var(--input-bg); padding: 1px 5px; border-radius: 3px; font-size: 11px; color: var(--text); }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .findings-list { margin-top: 16px; }
+  .finding-item { background: var(--panel-alt); border: 1px solid var(--border); border-left: 3px solid #888; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+  .finding-item:hover { border-color: var(--primary); }
+  .finding-item.editing { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.2); }
+  .finding-item.sev-critical { border-left-color: var(--critical); }
+  .finding-item.sev-high { border-left-color: var(--high); }
+  .finding-item.sev-medium { border-left-color: var(--medium); }
+  .finding-item.sev-low { border-left-color: var(--low); }
+  .finding-item.sev-info { border-left-color: var(--info); }
+  .finding-item-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .finding-item-meta { font-size: 11px; color: var(--text-muted); display: flex; gap: 10px; align-items: center; }
+  .sev-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sev-pill.critical { background: #450a0a; color: #fca5a5; }
+  .sev-pill.high { background: #431407; color: #fdba74; }
+  .sev-pill.medium { background: #451a03; color: #fcd34d; }
+  .sev-pill.low { background: #052e16; color: #86efac; }
+  .sev-pill.info { background: #0c1e3a; color: #93c5fd; }
+
+  .finding-edit-panel { display: none; background: var(--panel-alt); border: 1px solid var(--primary); border-radius: 8px; padding: 16px; margin-top: 12px; }
+  .finding-edit-panel.active { display: block; }
+
+  .panel-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+  .add-finding-btn { width: 100%; background: transparent; color: var(--text-muted); border: 2px dashed var(--border); padding: 12px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; margin-top: 8px; }
+  .add-finding-btn:hover { border-color: var(--primary); color: var(--text); }
+
+  .preview { background: #fafafa; overflow-y: auto; padding: 40px 30px; }
+  .preview::-webkit-scrollbar { width: 10px; }
+  .preview::-webkit-scrollbar-track { background: #e5e5e5; }
+  .preview::-webkit-scrollbar-thumb { background: #999; border-radius: 5px; }
+
+  .report { max-width: 8.5in; margin: 0 auto; background: #fff; color: #1a1a1a; padding: 0.75in 0.85in; box-shadow: 0 4px 20px rgba(0,0,0,0.15); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; font-size: 11pt; }
+
+  .report-page { padding-bottom: 40px; }
+
+  .cover { text-align: center; padding: 1.5in 0 1.5in; border-bottom: 3px solid var(--primary); }
+  .cover .cover-logo { max-width: 220px; max-height: 120px; margin: 0 auto 30px; display: block; }
+  .cover .cover-title { font-size: 32pt; font-weight: 700; color: #0f172a; margin-bottom: 8pt; letter-spacing: -0.5px; }
+  .cover .cover-subtitle { font-size: 14pt; color: #666; margin-bottom: 40pt; }
+  .cover .cover-meta { font-size: 11pt; color: #444; line-height: 2; }
+  .cover .cover-meta strong { color: #0f172a; }
+  .cover .cover-firm { margin-top: 40pt; padding-top: 20pt; border-top: 1px solid #e5e5e5; font-size: 12pt; font-weight: 600; color: var(--primary); }
+
+  .report-section { margin-top: 40pt; page-break-inside: avoid; }
+  .report-section h2 { font-size: 18pt; font-weight: 700; color: #0f172a; margin-bottom: 12pt; padding-bottom: 6pt; border-bottom: 2pt solid var(--primary); }
+  .report-section h3 { font-size: 13pt; font-weight: 700; color: #0f172a; margin: 20pt 0 10pt; }
+  .report-section p { margin-bottom: 10pt; color: #333; }
+  .report-section ul, .report-section ol { margin: 10pt 0 10pt 20pt; }
+
+  .disclaimer-box { background: #fef3c7; border-left: 4px solid #d97706; padding: 14pt 18pt; border-radius: 0 6pt 6pt 0; font-size: 10pt; color: #78350f; line-height: 1.7; }
+
+  .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10pt; margin-bottom: 20pt; }
+  .meta-item { background: #f5f5f5; padding: 10pt 14pt; border-radius: 4pt; border-left: 3pt solid var(--primary); }
+  .meta-label { font-size: 8pt; color: #888; text-transform: uppercase; letter-spacing: 1pt; font-weight: 600; margin-bottom: 3pt; }
+  .meta-value { font-size: 11pt; color: #1a1a1a; font-weight: 500; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8pt; margin: 20pt 0; }
+  .sev-card { background: #f5f5f5; border-radius: 6pt; padding: 12pt 8pt; text-align: center; }
+  .sev-card .count { font-size: 24pt; font-weight: 700; line-height: 1; }
+  .sev-card .label { font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 1pt; margin-top: 4pt; }
+  .sev-card.critical .count { color: var(--critical); }
+  .sev-card.high .count { color: var(--high); }
+  .sev-card.medium .count { color: var(--medium); }
+  .sev-card.low .count { color: var(--low); }
+  .sev-card.info .count { color: var(--info); }
+
+  .findings-table { width: 100%; border-collapse: collapse; margin: 20pt 0; }
+  .findings-table th { text-align: left; padding: 8pt 10pt; background: #f5f5f5; color: #666; font-size: 9pt; text-transform: uppercase; letter-spacing: 1pt; font-weight: 600; }
+  .findings-table td { padding: 10pt; border-bottom: 1pt solid #e5e5e5; font-size: 10pt; vertical-align: top; }
+  .findings-table tr:last-child td { border-bottom: none; }
+
+  .sev-tag { display: inline-block; padding: 2pt 8pt; border-radius: 10pt; font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5pt; }
+  .sev-tag.critical { background: #fee2e2; color: #991b1b; }
+  .sev-tag.high { background: #ffedd5; color: #c2410c; }
+  .sev-tag.medium { background: #fef3c7; color: #b45309; }
+  .sev-tag.low { background: #dcfce7; color: #15803d; }
+  .sev-tag.info { background: #dbeafe; color: #1e40af; }
+
+  .risk-rating-table { width: 100%; border-collapse: collapse; margin: 14pt 0; font-size: 10pt; }
+  .risk-rating-table th, .risk-rating-table td { padding: 8pt 12pt; border: 1pt solid #e5e5e5; text-align: left; }
+  .risk-rating-table th { background: #f5f5f5; font-weight: 600; color: #333; }
+
+  .finding-report-card { margin-top: 24pt; padding: 20pt 24pt; background: #fafafa; border: 1pt solid #e5e5e5; border-left: 4pt solid #888; border-radius: 6pt; page-break-inside: avoid; }
+  .finding-report-card.sev-critical { border-left-color: var(--critical); }
+  .finding-report-card.sev-high { border-left-color: var(--high); }
+  .finding-report-card.sev-medium { border-left-color: var(--medium); }
+  .finding-report-card.sev-low { border-left-color: var(--low); }
+  .finding-report-card.sev-info { border-left-color: var(--info); }
+
+  .finding-report-title { font-size: 13pt; font-weight: 700; color: #0f172a; margin-bottom: 8pt; }
+  .finding-report-meta { display: flex; gap: 6pt; flex-wrap: wrap; margin-bottom: 14pt; }
+  .meta-badge { background: #e5e5e5; color: #444; padding: 3pt 10pt; border-radius: 10pt; font-size: 9pt; font-weight: 600; }
+
+  .finding-report-section { margin-top: 12pt; }
+  .finding-report-label { font-size: 8pt; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5pt; font-weight: 700; margin-bottom: 4pt; }
+  .finding-report-body { font-size: 10pt; color: #333; line-height: 1.7; white-space: pre-wrap; }
+
+  .evidence-code { background: #1a1a1a; color: #e5e5e5; padding: 10pt 14pt; border-radius: 4pt; font-family: 'Courier New', monospace; font-size: 9pt; line-height: 1.5; overflow-x: auto; margin-top: 6pt; white-space: pre-wrap; }
+
+  .host-tag { background: #1e293b; color: #e2e8f0; padding: 2pt 8pt; border-radius: 3pt; font-size: 9pt; font-family: 'Courier New', monospace; margin-right: 4pt; display: inline-block; margin-bottom: 2pt; }
+
+  .report-footer { margin-top: 50pt; padding-top: 14pt; border-top: 1pt solid #e5e5e5; text-align: center; font-size: 9pt; color: #888; }
+
+  .empty-state { text-align: center; padding: 40pt 20pt; color: #999; font-style: italic; }
+
+  input[type="color"] { padding: 2px; height: 40px; cursor: pointer; }
+  input[type="file"] { font-size: 12px; }
+
+  @media print {
+    body { overflow: visible; background: #fff; }
+    .topbar, .editor, .preview::-webkit-scrollbar { display: none !important; }
+    .workspace { display: block; grid-template-columns: none; height: auto; }
+    .preview { padding: 0; background: #fff; overflow: visible; }
+    .report { max-width: none; margin: 0; padding: 0.5in 0.6in; box-shadow: none; font-size: 10pt; }
+    .cover { padding: 1in 0 1in; page-break-after: always; border-bottom: 3pt solid var(--primary); }
+    .report-section { page-break-inside: avoid; }
+    .finding-report-card { page-break-inside: avoid; }
+    @page { size: letter; margin: 0.5in 0.6in; }
+    @page :first { margin-top: 0.3in; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">atarus<span class="dot">-</span>report<span class="dot">-</span>kit<span class="suffix">v1.0</span></div>
+  <div class="topbar-spacer"></div>
+  <button class="btn" onclick="loadFile()">Open</button>
+  <button class="btn" onclick="saveFile()">Save</button>
+  <button class="btn primary" onclick="window.print()">Print to PDF</button>
+  <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFile(event)">
+</div>
+
+<div class="workspace">
+
+  <div class="editor">
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="branding" onclick="switchTab('branding')">Branding</button>
+      <button class="nav-tab" data-tab="cover" onclick="switchTab('cover')">Cover</button>
+      <button class="nav-tab" data-tab="engagement" onclick="switchTab('engagement')">Engagement</button>
+      <button class="nav-tab" data-tab="execsum" onclick="switchTab('execsum')">Exec Summary</button>
+      <button class="nav-tab" data-tab="findings" onclick="switchTab('findings')">Findings</button>
+      <button class="nav-tab" data-tab="methodology" onclick="switchTab('methodology')">Methodology</button>
+      <button class="nav-tab" data-tab="conclusion" onclick="switchTab('conclusion')">Conclusion</button>
+      <button class="nav-tab" data-tab="disclaimer" onclick="switchTab('disclaimer')">Disclaimer</button>
+    </div>
+
+    <div id="panel-branding" class="section-panel active">
+      <h2>Branding</h2>
+      <p class="section-desc">Customize the report to match your firm. Changes apply to every section of the report.</p>
+
+      <div class="field">
+        <label>Your Firm Name</label>
+        <input type="text" id="f_firm_name" placeholder="e.g. Acme Security Consulting" oninput="render()">
+        <div class="help"><strong>Tip:</strong> This appears on the cover page and footer. If you're freelancing, use your name (e.g. "Jane Doe Security").</div>
+      </div>
+
+      <div class="field">
+        <label>Logo (optional)</label>
+        <input type="file" id="f_logo" accept="image/png,image/jpeg,image/svg+xml" onchange="handleLogo(event)">
+        <div class="help">PNG, JPG, or SVG. Will appear at the top of the cover page. Keep it under 500KB.</div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Primary Color</label>
+          <input type="color" id="f_primary" value="#1e40af" oninput="updateColors()">
+        </div>
+        <div class="field">
+          <label>Accent Color</label>
+          <input type="color" id="f_accent" value="#dc2626" oninput="updateColors()">
+        </div>
+      </div>
+      <div class="help" style="margin-top:-8px;margin-bottom:16px"><strong>Tip:</strong> Primary is used for section titles and borders. Accent highlights finding labels. Keep them professional and readable.</div>
+
+      <div class="field">
+        <label>Footer Text</label>
+        <input type="text" id="f_footer" value="Confidential - Do Not Distribute" oninput="render()">
+        <div class="help">Appears at the bottom of every page when printed.</div>
+      </div>
+    </div>
+
+    <div id="panel-cover" class="section-panel">
+      <h2>Cover Page</h2>
+      <p class="section-desc">The first thing the client sees. Keep it clean and professional.</p>
+
+      <div class="field">
+        <label>Report Title</label>
+        <input type="text" id="f_title" value="Penetration Test Report" oninput="render()">
+        <div class="help">Examples: <code>External Penetration Test Report</code>, <code>Web Application Security Assessment</code>, <code>Internal Network Assessment</code></div>
+      </div>
+
+      <div class="field">
+        <label>Client Name</label>
+        <input type="text" id="f_client" placeholder="e.g. Acme Corporation" oninput="render()">
+        <div class="help">The company you tested. This appears prominently on the cover.</div>
+      </div>
+
+      <div class="field">
+        <label>Report Date</label>
+        <input type="text" id="f_date" oninput="render()">
+        <div class="help">Example: <code>January 22, 2026</code>. Use the date the report was finalized.</div>
+      </div>
+
+      <div class="field">
+        <label>Tester Name</label>
+        <input type="text" id="f_tester" placeholder="e.g. Jane Doe" oninput="render()">
+      </div>
+
+      <div class="field">
+        <label>Tester Email</label>
+        <input type="email" id="f_tester_email" placeholder="jane@yourfirm.com" oninput="render()">
+      </div>
+    </div>
+
+    <div id="panel-engagement" class="section-panel">
+      <h2>Engagement Overview</h2>
+      <p class="section-desc">Basic details about what you tested and when.</p>
+
+      <div class="field">
+        <label>Engagement Type</label>
+        <select id="f_type" onchange="render()">
+          <option>External Penetration Test</option>
+          <option>Internal Penetration Test</option>
+          <option>Web Application Penetration Test</option>
+          <option>API Security Assessment</option>
+          <option>Mobile Application Assessment</option>
+          <option>Cloud Security Assessment</option>
+          <option>Network Vulnerability Assessment</option>
+          <option>Social Engineering Assessment</option>
+          <option>Wireless Network Assessment</option>
+          <option>Red Team Engagement</option>
+        </select>
+        <div class="help">Pick the closest match. You can edit the rendered text if none fit exactly.</div>
+      </div>
+
+      <div class="field">
+        <label>Engagement Dates</label>
+        <input type="text" id="f_dates" placeholder="2026-01-15 to 2026-01-22" oninput="render()">
+        <div class="help">Format: <code>YYYY-MM-DD to YYYY-MM-DD</code></div>
+      </div>
+
+      <div class="field">
+        <label>Scope (In-Scope Systems)</label>
+        <textarea id="f_scope" placeholder="e.g.&#10;- app.acme.com&#10;- api.acme.com&#10;- 203.0.113.0/24"  oninput="render()"></textarea>
+        <div class="help"><strong>Tip:</strong> Be specific. List domains, IP ranges, or applications exactly as defined in your Rules of Engagement. This is your legal cover.</div>
+      </div>
+
+      <div class="field">
+        <label>Out-of-Scope (Optional)</label>
+        <textarea id="f_oos" placeholder="e.g.&#10;- Production databases&#10;- Email infrastructure&#10;- Denial of service testing" oninput="render()"></textarea>
+        <div class="help">What you were NOT allowed to test. Include this to protect yourself and the client.</div>
+      </div>
+    </div>
+
+    <div id="panel-execsum" class="section-panel">
+      <h2>Executive Summary</h2>
+      <p class="section-desc">Write for a non-technical reader. The CEO, the board, the client's legal team.</p>
+
+      <div class="field">
+        <label>Executive Summary</label>
+        <textarea class="tall" id="f_execsum" placeholder="Acme engaged our team to perform an external penetration test..." oninput="render()"></textarea>
+        <div class="help"><strong>Good exec summaries answer three questions:</strong><br>1. What did we do? (scope + dates)<br>2. What did we find? (most important findings, in plain English)<br>3. What should the business do? (top priorities)<br><br>Avoid jargon. If you say "XSS" explain it as "a vulnerability that can steal user sessions". Keep it under 300 words.</div>
+      </div>
+
+      <div class="field">
+        <label>Strategic Recommendations (Optional)</label>
+        <textarea id="f_strategic" placeholder="1. Implement multi-factor authentication across all admin accounts&#10;2. Establish a vulnerability management program&#10;3. Conduct quarterly security awareness training" oninput="render()"></textarea>
+        <div class="help">High-level program recommendations beyond the individual findings. Think: what should this company's security program look like in 6 months?</div>
+      </div>
+    </div>
+
+    <div id="panel-findings" class="section-panel">
+      <h2>Findings</h2>
+      <p class="section-desc">The meat of the report. Each finding teaches the client something about their security posture.</p>
+
+      <div id="findings-list" class="findings-list"></div>
+      <button class="add-finding-btn" onclick="addFinding()">+ Add Finding</button>
+
+      <div id="finding-edit-panel" class="finding-edit-panel"></div>
+    </div>
+
+    <div id="panel-methodology" class="section-panel">
+      <h2>Methodology</h2>
+      <p class="section-desc">Describe your testing approach. This shows the client you followed a rigorous process.</p>
+
+      <div class="field">
+        <label>Methodology</label>
+        <textarea class="tall" id="f_methodology" oninput="render()"></textarea>
+        <div class="help"><strong>Common frameworks to reference:</strong> PTES, OWASP Testing Guide, NIST SP 800-115, OSSTMM.<br><br><strong>Typical phases to describe:</strong> Reconnaissance, Scanning/Enumeration, Vulnerability Analysis, Exploitation, Post-Exploitation, Reporting.</div>
+      </div>
+    </div>
+
+    <div id="panel-conclusion" class="section-panel">
+      <h2>Conclusion</h2>
+      <p class="section-desc">Wrap it up. What's the overall security posture, and what should happen next?</p>
+
+      <div class="field">
+        <label>Conclusion</label>
+        <textarea class="tall" id="f_conclusion" placeholder="The assessment identified several critical vulnerabilities..." oninput="render()"></textarea>
+        <div class="help"><strong>A good conclusion includes:</strong><br>1. Overall posture assessment (strong, adequate, concerning, critical)<br>2. Key risk themes across findings<br>3. Suggested next steps (remediation, retest, training)<br><br>Keep it 2-3 paragraphs. This is the last thing the executive reader sees.</div>
+      </div>
+    </div>
+
+    <div id="panel-disclaimer" class="section-panel">
+      <h2>Disclaimer</h2>
+      <p class="section-desc">Legal protection. Modify to match your firm's standard language.</p>
+
+      <div class="field">
+        <label>Disclaimer Text</label>
+        <textarea class="tall" id="f_disclaimer" oninput="render()"></textarea>
+        <div class="help"><strong>Tip:</strong> Typical disclaimers cover: confidentiality, scope limitations, testing timeframe, no warranty of completeness, and recommendations to consult legal/compliance teams. Have your actual template reviewed by a lawyer for commercial use.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="preview">
+    <div class="report" id="report"></div>
+  </div>
+
+</div>
+
+<script>
+let state = {
+  firm_name: "",
+  logo: "",
+  primary: "#1e40af",
+  accent: "#dc2626",
+  footer: "Confidential - Do Not Distribute",
+  title: "Penetration Test Report",
+  client: "",
+  date: "",
+  tester: "",
+  tester_email: "",
+  type: "External Penetration Test",
+  dates: "",
+  scope: "",
+  oos: "",
+  execsum: "",
+  strategic: "",
+  methodology: "Testing followed the Penetration Testing Execution Standard (PTES) methodology, covering the following phases:\n\n1. Pre-engagement and scoping\n2. Intelligence gathering\n3. Threat modeling\n4. Vulnerability analysis\n5. Exploitation\n6. Post-exploitation\n7. Reporting\n\nAll testing was conducted against systems explicitly authorized in the Rules of Engagement. Exploitation was limited to validation of vulnerabilities; no destructive actions were taken.",
+  conclusion: "",
+  disclaimer: "This report contains confidential information intended solely for the named client. Unauthorized distribution or reproduction is prohibited. Findings reflect the state of tested systems during the engagement timeframe only and may not represent the current state.\n\nPenetration testing cannot guarantee the discovery of all vulnerabilities. Systems, configurations, and threats change rapidly. This report should be read in conjunction with other security assessments and is not a substitute for a comprehensive security program.\n\nRecommendations in this report are advisory. Clients should evaluate them in the context of their own risk tolerance, business requirements, and regulatory obligations.",
+  findings: []
+};
+
+let editingFindingId = null;
+
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  if (tab === 'findings') renderFindingsList();
+}
+
+function render() {
+  const ids = ['firm_name','footer','title','client','date','tester','tester_email','dates','scope','oos','execsum','strategic','methodology','conclusion','disclaimer'];
+  ids.forEach(id => {
+    const el = document.getElementById(`f_${id}`);
+    if (el) state[id] = el.value;
+  });
+  const typeEl = document.getElementById('f_type');
+  if (typeEl) state.type = typeEl.value;
+
+  renderReport();
+  autoSave();
+}
+
+function updateColors() {
+  state.primary = document.getElementById('f_primary').value;
+  state.accent = document.getElementById('f_accent').value;
+  document.documentElement.style.setProperty('--primary', state.primary);
+  document.documentElement.style.setProperty('--accent', state.accent);
+  renderReport();
+  autoSave();
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function multiline(s) {
+  if (!s) return '';
+  return escapeHtml(s).replace(/\n/g, '<br>');
+}
+
+function renderReport() {
+  const r = document.getElementById('report');
+  const counts = {critical: 0, high: 0, medium: 0, low: 0, info: 0};
+  state.findings.forEach(f => {
+    if (counts[f.severity] !== undefined) counts[f.severity]++;
+  });
+
+  const orderedFindings = [...state.findings].sort((a, b) => {
+    const order = {critical: 0, high: 1, medium: 2, low: 3, info: 4};
+    return (order[a.severity] || 5) - (order[b.severity] || 5);
+  });
+
+  let html = '';
+
+  html += `<div class="cover report-page">`;
+  if (state.logo) html += `<img src="${state.logo}" class="cover-logo" alt="logo">`;
+  html += `<div class="cover-title">${escapeHtml(state.title || 'Penetration Test Report')}</div>`;
+  if (state.client) html += `<div class="cover-subtitle">Prepared for ${escapeHtml(state.client)}</div>`;
+  html += `<div class="cover-meta">`;
+  if (state.date) html += `<div><strong>Report Date:</strong> ${escapeHtml(state.date)}</div>`;
+  if (state.type) html += `<div><strong>Engagement:</strong> ${escapeHtml(state.type)}</div>`;
+  if (state.dates) html += `<div><strong>Testing Dates:</strong> ${escapeHtml(state.dates)}</div>`;
+  if (state.tester) html += `<div><strong>Lead Tester:</strong> ${escapeHtml(state.tester)}${state.tester_email ? ' (' + escapeHtml(state.tester_email) + ')' : ''}</div>`;
+  html += `</div>`;
+  if (state.firm_name) html += `<div class="cover-firm">${escapeHtml(state.firm_name)}</div>`;
+  html += `</div>`;
+
+  if (state.disclaimer) {
+    html += `<div class="report-section"><h2>Disclaimer</h2><div class="disclaimer-box">${multiline(state.disclaimer)}</div></div>`;
+  }
+
+  html += `<div class="report-section"><h2>Engagement Overview</h2><div class="meta-grid">`;
+  if (state.client) html += `<div class="meta-item"><div class="meta-label">Client</div><div class="meta-value">${escapeHtml(state.client)}</div></div>`;
+  if (state.type) html += `<div class="meta-item"><div class="meta-label">Engagement Type</div><div class="meta-value">${escapeHtml(state.type)}</div></div>`;
+  if (state.dates) html += `<div class="meta-item"><div class="meta-label">Testing Dates</div><div class="meta-value">${escapeHtml(state.dates)}</div></div>`;
+  if (state.tester) html += `<div class="meta-item"><div class="meta-label">Lead Tester</div><div class="meta-value">${escapeHtml(state.tester)}</div></div>`;
+  html += `</div>`;
+  if (state.scope) html += `<h3>Scope</h3><p>${multiline(state.scope)}</p>`;
+  if (state.oos) html += `<h3>Out of Scope</h3><p>${multiline(state.oos)}</p>`;
+  html += `</div>`;
+
+  if (state.execsum) {
+    html += `<div class="report-section"><h2>Executive Summary</h2><p>${multiline(state.execsum)}</p></div>`;
+  }
+
+  html += `<div class="report-section"><h2>Summary of Results</h2><div class="summary-grid">`;
+  html += `<div class="sev-card critical"><div class="count">${counts.critical}</div><div class="label">Critical</div></div>`;
+  html += `<div class="sev-card high"><div class="count">${counts.high}</div><div class="label">High</div></div>`;
+  html += `<div class="sev-card medium"><div class="count">${counts.medium}</div><div class="label">Medium</div></div>`;
+  html += `<div class="sev-card low"><div class="count">${counts.low}</div><div class="label">Low</div></div>`;
+  html += `<div class="sev-card info"><div class="count">${counts.info}</div><div class="label">Info</div></div>`;
+  html += `</div></div>`;
+
+  if (state.strategic) {
+    html += `<div class="report-section"><h2>Strategic Recommendations</h2><p>${multiline(state.strategic)}</p></div>`;
+  }
+
+  html += `<div class="report-section"><h2>Risk Rating Methodology</h2>`;
+  html += `<table class="risk-rating-table"><thead><tr><th>Severity</th><th>Description</th></tr></thead><tbody>`;
+  html += `<tr><td><span class="sev-tag critical">Critical</span></td><td>Direct, unauthenticated path to sensitive data or full system compromise. Immediate risk of breach. Fix within 24-72 hours.</td></tr>`;
+  html += `<tr><td><span class="sev-tag high">High</span></td><td>Significant security weakness that enables major compromise with moderate effort. Fix within 1-2 weeks.</td></tr>`;
+  html += `<tr><td><span class="sev-tag medium">Medium</span></td><td>Security issue with meaningful impact but requires specific conditions or chained vulnerabilities. Fix within 30 days.</td></tr>`;
+  html += `<tr><td><span class="sev-tag low">Low</span></td><td>Minor security weakness with limited direct impact. Fix as part of normal maintenance.</td></tr>`;
+  html += `<tr><td><span class="sev-tag info">Info</span></td><td>Informational finding with no direct security impact. Included for context or hardening recommendations.</td></tr>`;
+  html += `</tbody></table></div>`;
+
+  if (state.findings.length > 0) {
+    html += `<div class="report-section"><h2>Summary of Findings</h2><table class="findings-table"><thead><tr><th style="width:90px">Severity</th><th>Finding</th><th style="width:40%">Summary</th></tr></thead><tbody>`;
+    orderedFindings.forEach(f => {
+      const firstLine = (f.observation || '').split('\n')[0].substring(0, 150);
+      html += `<tr><td><span class="sev-tag ${f.severity}">${f.severity.toUpperCase()}</span></td><td><strong>${escapeHtml(f.title)}</strong></td><td>${escapeHtml(firstLine)}${(f.observation || '').length > 150 ? '...' : ''}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    html += `<div class="report-section"><h2>Detailed Findings</h2>`;
+    ['critical','high','medium','low','info'].forEach(sev => {
+      const items = orderedFindings.filter(f => f.severity === sev);
+      items.forEach(f => {
+        html += `<div class="finding-report-card sev-${sev}">`;
+        html += `<div class="finding-report-title">${escapeHtml(f.title)}</div>`;
+        html += `<div class="finding-report-meta">`;
+        html += `<span class="sev-tag ${sev}">${sev.toUpperCase()}</span>`;
+        if (f.cvss) html += `<span class="meta-badge">CVSS ${escapeHtml(f.cvss)}</span>`;
+        if (f.cwe) html += `<span class="meta-badge">${escapeHtml(f.cwe)}</span>`;
+        html += `</div>`;
+        if (f.affected) html += `<div style="margin-bottom:10pt">${f.affected.split('\n').filter(x => x.trim()).map(h => `<span class="host-tag">${escapeHtml(h.trim())}</span>`).join('')}</div>`;
+        if (f.observation) html += `<div class="finding-report-section"><div class="finding-report-label">Observation</div><div class="finding-report-body">${escapeHtml(f.observation)}</div></div>`;
+        if (f.risk) html += `<div class="finding-report-section"><div class="finding-report-label">Risk</div><div class="finding-report-body">${escapeHtml(f.risk)}</div></div>`;
+        if (f.recommendation) html += `<div class="finding-report-section"><div class="finding-report-label">Recommendation</div><div class="finding-report-body">${escapeHtml(f.recommendation)}</div></div>`;
+        if (f.evidence) html += `<div class="finding-report-section"><div class="finding-report-label">Evidence</div><div class="evidence-code">${escapeHtml(f.evidence)}</div></div>`;
+        if (f.references) html += `<div class="finding-report-section"><div class="finding-report-label">References</div><div class="finding-report-body">${multiline(f.references)}</div></div>`;
+        html += `</div>`;
+      });
+    });
+    html += `</div>`;
+  }
+
+  if (state.methodology) {
+    html += `<div class="report-section"><h2>Methodology</h2><p>${multiline(state.methodology)}</p></div>`;
+  }
+
+  if (state.conclusion) {
+    html += `<div class="report-section"><h2>Conclusion</h2><p>${multiline(state.conclusion)}</p></div>`;
+  }
+
+  html += `<div class="report-footer">${escapeHtml(state.footer)}</div>`;
+
+  r.innerHTML = html;
+}
+
+function addFinding() {
+  const id = Date.now().toString();
+  state.findings.push({
+    id: id,
+    title: "New Finding",
+    severity: "medium",
+    cvss: "",
+    cwe: "",
+    affected: "",
+    observation: "",
+    risk: "",
+    recommendation: "",
+    evidence: "",
+    references: ""
+  });
+  editFinding(id);
+  autoSave();
+}
+
+function editFinding(id) {
+  editingFindingId = id;
+  renderFindingsList();
+  const f = state.findings.find(x => x.id === id);
+  if (!f) return;
+  const panel = document.getElementById('finding-edit-panel');
+  panel.className = 'finding-edit-panel active';
+  panel.innerHTML = `
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="fe_title" value="${escapeHtml(f.title)}" oninput="updateFinding('title', this.value)">
+      <div class="help"><strong>Tip:</strong> Make titles specific and actionable. Good: <code>SQL Injection in Login Form</code>. Bad: <code>Security Issue</code>.</div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Severity</label>
+        <select id="fe_severity" onchange="updateFinding('severity', this.value)">
+          <option value="critical" ${f.severity==='critical'?'selected':''}>Critical</option>
+          <option value="high" ${f.severity==='high'?'selected':''}>High</option>
+          <option value="medium" ${f.severity==='medium'?'selected':''}>Medium</option>
+          <option value="low" ${f.severity==='low'?'selected':''}>Low</option>
+          <option value="info" ${f.severity==='info'?'selected':''}>Info</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>CVSS Score (Optional)</label>
+        <input type="text" id="fe_cvss" value="${escapeHtml(f.cvss)}" placeholder="e.g. 9.8" oninput="updateFinding('cvss', this.value)">
+      </div>
+    </div>
+    <div class="field">
+      <label>CWE ID (Optional)</label>
+      <input type="text" id="fe_cwe" value="${escapeHtml(f.cwe)}" placeholder="e.g. CWE-89" oninput="updateFinding('cwe', this.value)">
+      <div class="help">Common Weakness Enumeration ID. Look up at <code>cwe.mitre.org</code>. Helps clients categorize the weakness.</div>
+    </div>
+    <div class="field">
+      <label>Affected Systems</label>
+      <textarea id="fe_affected" oninput="updateFinding('affected', this.value)" placeholder="app.acme.com&#10;api.acme.com">${escapeHtml(f.affected)}</textarea>
+      <div class="help">One host/URL per line. These render as tags in the report.</div>
+    </div>
+    <div class="field">
+      <label>Observation</label>
+      <textarea class="tall" id="fe_obs" oninput="updateFinding('observation', this.value)" placeholder="Describe WHAT you found. Be specific and factual.">${escapeHtml(f.observation)}</textarea>
+      <div class="help"><strong>What goes here:</strong> The technical details of what exists. <code>"The login form at /auth/login accepts SQL metacharacters in the username parameter, enabling injection into the database query."</code><br><br><strong>What does NOT go here:</strong> Why it matters. Save that for Risk.</div>
+    </div>
+    <div class="field">
+      <label>Risk</label>
+      <textarea class="tall" id="fe_risk" oninput="updateFinding('risk', this.value)" placeholder="What's the worst that could happen?">${escapeHtml(f.risk)}</textarea>
+      <div class="help"><strong>Answer the question:</strong> "If nobody fixes this, what's the worst that could happen?"<br><br><strong>Good Risk statement:</strong> <code>"An attacker can bypass authentication, extract the full user database including password hashes, and potentially pivot to internal systems using stolen credentials."</code></div>
+    </div>
+    <div class="field">
+      <label>Recommendation</label>
+      <textarea class="tall" id="fe_rec" oninput="updateFinding('recommendation', this.value)" placeholder="How to fix it">${escapeHtml(f.recommendation)}</textarea>
+      <div class="help"><strong>Be specific and actionable.</strong> Don't say <code>"use secure coding practices"</code>. Say <code>"Replace the string concatenation in LoginService.java:45 with parameterized queries using PreparedStatement."</code></div>
+    </div>
+    <div class="field">
+      <label>Evidence (Optional)</label>
+      <textarea id="fe_ev" oninput="updateFinding('evidence', this.value)" placeholder="Request/response, command output, screenshot description">${escapeHtml(f.evidence)}</textarea>
+      <div class="help">Raw proof. HTTP requests, responses, terminal output, or a description of the screenshot you took. Renders as a code block in the report.</div>
+    </div>
+    <div class="field">
+      <label>References (Optional)</label>
+      <textarea id="fe_ref" oninput="updateFinding('references', this.value)" placeholder="https://owasp.org/www-community/attacks/SQL_Injection&#10;https://cwe.mitre.org/data/definitions/89.html">${escapeHtml(f.references)}</textarea>
+      <div class="help">One URL per line. Links to OWASP, CWE, CVE, or vendor advisories help the client understand the issue.</div>
+    </div>
+    <div class="panel-actions">
+      <button class="btn danger" onclick="deleteFinding('${id}')">Delete Finding</button>
+      <button class="btn" onclick="closeFindingEdit()">Close</button>
+    </div>
+  `;
+}
+
+function updateFinding(field, value) {
+  const f = state.findings.find(x => x.id === editingFindingId);
+  if (!f) return;
+  f[field] = value;
+  renderFindingsList();
+  renderReport();
+  autoSave();
+}
+
+function deleteFinding(id) {
+  if (!confirm('Delete this finding?')) return;
+  state.findings = state.findings.filter(f => f.id !== id);
+  editingFindingId = null;
+  document.getElementById('finding-edit-panel').className = 'finding-edit-panel';
+  renderFindingsList();
+  renderReport();
+  autoSave();
+}
+
+function closeFindingEdit() {
+  editingFindingId = null;
+  document.getElementById('finding-edit-panel').className = 'finding-edit-panel';
+  renderFindingsList();
+}
+
+function renderFindingsList() {
+  const list = document.getElementById('findings-list');
+  if (state.findings.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:20px;color:var(--text-muted);font-style:italic;text-align:center">No findings yet. Click the button below to add your first.</div>`;
+    return;
+  }
+  const order = {critical: 0, high: 1, medium: 2, low: 3, info: 4};
+  const sorted = [...state.findings].sort((a, b) => (order[a.severity] || 5) - (order[b.severity] || 5));
+  list.innerHTML = sorted.map(f => `
+    <div class="finding-item sev-${f.severity} ${editingFindingId === f.id ? 'editing' : ''}" onclick="editFinding('${f.id}')">
+      <div class="finding-item-title">${escapeHtml(f.title)}</div>
+      <div class="finding-item-meta">
+        <span class="sev-pill ${f.severity}">${f.severity}</span>
+        ${f.cvss ? `<span>CVSS ${escapeHtml(f.cvss)}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 500000) { alert('Logo must be under 500KB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => { state.logo = e.target.result; renderReport(); autoSave(); };
+  reader.readAsDataURL(file);
+}
+
+function saveFile() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const filename = (state.client || 'report').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + new Date().toISOString().split('T')[0] + '.json';
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadFile() {
+  document.getElementById('fileInput').click();
+}
+
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      state = Object.assign(state, data);
+      loadStateToUI();
+      renderReport();
+      autoSave();
+    } catch (err) {
+      alert('Failed to load file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadStateToUI() {
+  const ids = ['firm_name','footer','title','client','date','tester','tester_email','dates','scope','oos','execsum','strategic','methodology','conclusion','disclaimer'];
+  ids.forEach(id => {
+    const el = document.getElementById(`f_${id}`);
+    if (el && state[id] !== undefined) el.value = state[id];
+  });
+  const typeEl = document.getElementById('f_type');
+  if (typeEl && state.type) typeEl.value = state.type;
+  document.getElementById('f_primary').value = state.primary || '#1e40af';
+  document.getElementById('f_accent').value = state.accent || '#dc2626';
+  document.documentElement.style.setProperty('--primary', state.primary);
+  document.documentElement.style.setProperty('--accent', state.accent);
+  renderFindingsList();
+}
+
+function autoSave() {
+  try {
+    localStorage.setItem('atarus_report_autosave', JSON.stringify(state));
+  } catch (e) {}
+}
+
+function tryAutoLoad() {
+  try {
+    const saved = localStorage.getItem('atarus_report_autosave');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (confirm('Found an auto-saved report from your last session. Load it?')) {
+        state = Object.assign(state, data);
+      }
+    }
+  } catch (e) {}
+}
+
+window.onload = function() {
+  tryAutoLoad();
+  if (!state.date) {
+    state.date = new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
+  }
+  loadStateToUI();
+  render();
+};
+</script>
+
+</body>
+</html>
