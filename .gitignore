@@ -14,4 +14,4 @@ test-output.pdf
 Thumbs.db
 
 # Build scripts (local only)
-build_*.sh
+build*.sh
