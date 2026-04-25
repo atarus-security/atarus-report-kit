@@ -51,8 +51,9 @@ That is the entire workflow.
 
 [Atarus Offensive Security](https://atarussecurity.com). Part of the `atarus-*` open source pentest suite.
 
-- [atarus-recon](https://github.com/atarus-security/atarus-recon) - external recon
-- [atarus-cloud](https://github.com/atarus-security/atarus-cloud) - multi-cloud scanner
+- [atarus-recon](https://github.com/atarus-security/atarus-recon) - external attack surface recon
+- [atarus-cloud](https://github.com/atarus-security/atarus-cloud) - multi-cloud security scanner (AWS + Azure)
+- [atarus-phishcheck](https://github.com/atarus-security/atarus-phishcheck) - email security analyzer
 - atarus-report-kit - you are here
 
 ## License
