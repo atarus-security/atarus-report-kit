@@ -453,8 +453,15 @@ function updateColors() {
 }
 
 function escapeHtml(s) {
-  if (!s) return '';
+  if (s === undefined || s === null) return '';
+  s = String(s);
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Only uploaded image data URLs are rendered as the logo. Report JSON files can
+// come from other people, so nothing else from them is placed in markup unescaped.
+function isImageDataUrl(s) {
+  return typeof s === 'string' && /^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/.test(s);
 }
 
 function multiline(s) {
@@ -477,7 +484,7 @@ function renderReport() {
   let html = '';
 
   html += `<div class="cover report-page">`;
-  if (state.logo) html += `<img src="${state.logo}" class="cover-logo" alt="logo">`;
+  if (isImageDataUrl(state.logo)) html += `<img src="${escapeHtml(state.logo)}" class="cover-logo" alt="logo">`;
   html += `<div class="cover-title">${escapeHtml(state.title || 'Penetration Test Report')}</div>`;
   if (state.client) html += `<div class="cover-subtitle">Prepared for ${escapeHtml(state.client)}</div>`;
   html += `<div class="cover-meta">`;
@@ -532,7 +539,7 @@ function renderReport() {
     html += `<div class="report-section"><h2>Summary of Findings</h2><table class="findings-table"><thead><tr><th style="width:90px">Severity</th><th>Finding</th><th style="width:40%">Summary</th></tr></thead><tbody>`;
     orderedFindings.forEach(f => {
       const firstLine = (f.observation || '').split('\n')[0].substring(0, 150);
-      html += `<tr><td><span class="sev-tag ${f.severity}">${f.severity.toUpperCase()}</span></td><td><strong>${escapeHtml(f.title)}</strong></td><td>${escapeHtml(firstLine)}${(f.observation || '').length > 150 ? '...' : ''}</td></tr>`;
+      html += `<tr><td><span class="sev-tag ${escapeHtml(f.severity)}">${escapeHtml(f.severity).toUpperCase()}</span></td><td><strong>${escapeHtml(f.title)}</strong></td><td>${escapeHtml(firstLine)}${(f.observation || '').length > 150 ? '...' : ''}</td></tr>`;
     });
     html += `</tbody></table></div>`;
 
@@ -696,10 +703,10 @@ function renderFindingsList() {
   const order = {critical: 0, high: 1, medium: 2, low: 3, info: 4};
   const sorted = [...state.findings].sort((a, b) => (order[a.severity] || 5) - (order[b.severity] || 5));
   list.innerHTML = sorted.map(f => `
-    <div class="finding-item sev-${f.severity} ${editingFindingId === f.id ? 'editing' : ''}" onclick="editFinding('${f.id}')">
+    <div class="finding-item sev-${escapeHtml(f.severity)} ${editingFindingId === f.id ? 'editing' : ''}" onclick="editFinding(${escapeHtml(JSON.stringify(String(f.id)))})">
       <div class="finding-item-title">${escapeHtml(f.title)}</div>
       <div class="finding-item-meta">
-        <span class="sev-pill ${f.severity}">${f.severity}</span>
+        <span class="sev-pill ${escapeHtml(f.severity)}">${escapeHtml(f.severity)}</span>
         ${f.cvss ? `<span>CVSS ${escapeHtml(f.cvss)}</span>` : ''}
       </div>
     </div>
