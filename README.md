@@ -54,7 +54,20 @@ That is the entire workflow.
 - [atarus-recon](https://github.com/atarus-security/atarus-recon) - external attack surface recon
 - [atarus-cloud](https://github.com/atarus-security/atarus-cloud) - multi-cloud security scanner (AWS + Azure)
 - [atarus-phishcheck](https://github.com/atarus-security/atarus-phishcheck) - email security analyzer
+- [atarus-webscan](https://github.com/atarus-security/atarus-webscan) - web application security scanner
 - atarus-report-kit - you are here
+
+## Security
+
+Report JSON files are data from whoever wrote them; only load reports from people you trust. The page autosaves the current report to the browser's localStorage, so avoid shared or synced browser profiles for client work. See [SECURITY.md](SECURITY.md) to report a vulnerability.
+
+## Testing
+
+```bash
+python3 tests/browser_test.py
+```
+
+Runs the page in headless Chrome or Chromium (set `CHROME=/path/to/browser` if it is not on the PATH) and checks that crafted report files cannot run script and that normal reports render. GitHub Actions runs it on every push.
 
 ## License
 
