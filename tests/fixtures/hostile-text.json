@@ -1,0 +1,43 @@
+{
+  "firm_name": "Example Security <b>Ltd</b>",
+  "logo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "primary": "#1E40AF",
+  "accent": "#dc2626",
+  "footer": "Confidential </div><script>document.title='PWNED-footer'</script>",
+  "title": "Penetration Test Report <img src=x onerror=\"document.title='PWNED-title'\">",
+  "client": "<b>Example Corp</b><img src=x onerror=\"document.title='PWNED-client'\">",
+  "date": "January 22, 2026",
+  "tester": "Lead Tester\u0007 Name",
+  "tester_email": "javascript:alert(1)",
+  "type": "Web Application Penetration Test",
+  "dates": "2026-01-15 to 2026-01-22",
+  "scope": "- app.example.com\n- <iframe src=\"javascript:document.title='PWNED-scope'\"></iframe>",
+  "oos": "Denial of service testing",
+  "execsum": "Summary line one.\n\n<svg onload=\"document.title='PWNED-execsum'\"></svg>",
+  "strategic": "1. Enable MFA",
+  "methodology": "PTES",
+  "conclusion": "Overall posture: concerning.",
+  "disclaimer": "Confidential.",
+  "findings": [
+    {
+      "id": "f1",
+      "title": "SQL injection in login form <script>document.title='PWNED-f1'</script>",
+      "severity": "high",
+      "cvss": 9.8,
+      "cwe": "CWE-89",
+      "affected": "app.example.com\n<img src=x onerror=\"document.title='PWNED-host'\">",
+      "observation": "The login form accepts ' OR 1=1 -- in the username field.",
+      "risk": "Full database read.",
+      "recommendation": "Parameterised queries.",
+      "evidence": "POST /login HTTP/1.1\nusername=' OR 1=1 --&password=x\n<script>document.title='PWNED-evidence'</script>",
+      "references": "https://owasp.org/www-community/attacks/SQL_Injection\njavascript:document.title='PWNED-ref'"
+    },
+    {
+      "id": "f2",
+      "title": "Missing security headers",
+      "severity": "low",
+      "cvss": "3.1"
+    }
+  ],
+  "notes": "an unknown field, dropped on load"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "atarus-report-kit",
+  "version": "1.1.0",
+  "description": "Offline, single-folder pentest report builder. Open the HTML file in a browser.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

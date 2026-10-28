@@ -1,0 +1,40 @@
+{
+  "__proto__": { "polluted": true },
+  "constructor": {
+    "prototype": {
+      "polluted": true
+    }
+  },
+  "logo": "x\" onerror=\"document.title='PWNED-logo'",
+  "primary": "red; background:url(https://example.invalid/leak)",
+  "accent": "javascript:alert(1)",
+  "title": "<script>document.title='PWNED-title'</script>Report",
+  "client": "<img src=x onerror=\"document.title='PWNED-client'\">",
+  "tester_email": "javascript:alert(document.domain)",
+  "type": "<svg onload=\"document.title='PWNED-type'\">",
+  "date": 20260101,
+  "scope": [
+    "app.example.com"
+  ],
+  "findings": [
+    {
+      "id": "f1\"');document.title='PWNED-id';//",
+      "title": "t</script><script>document.title='PWNED-finding'</script>",
+      "severity": "<img src=x onerror=\"document.title='PWNED-sev'\">",
+      "cvss": "9.8\" onmouseover=\"document.title='PWNED-cvss'",
+      "references": "javascript:document.title='PWNED-ref'"
+    },
+    {
+      "id": "ok-1",
+      "title": "fine",
+      "severity": "high"
+    },
+    {
+      "id": "ok-1",
+      "title": "duplicate id",
+      "severity": "low"
+    },
+    "not an object"
+  ],
+  "unknown_field": "ignored"
+}
